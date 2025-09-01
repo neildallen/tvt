@@ -1,152 +1,191 @@
-# TVT Token Launchpad - Battle Arena
+# TvT Launchpad Backend Server
 
-A Solana-based launchpad dApp where users create competitive token "battles" using Meteora's Dynamic Bonding Curve. Two tokens launch simultaneously, and liquidity flows to the winner based on market cap after a countdown.
+A Node.js/Express backend server for launching tokens on Solana using the Dynamic Bonding Curve SDK.
 
-## 🚀 Features
+## Features
 
-### Core Functionality
-- **Token Battles**: Create competitive launches with two tokens fighting for dominance
-- **Dynamic Bonding Curve**: Integration with Meteora for fair token launches
-- **Countdown Timers**: Customizable battle durations (15m to 12h)
-- **Liquidity Pouring**: Automatic liquidity transfer from loser to winner (70%), TVT token (10%), and team wallet (20%)
-- **Real-time Updates**: Live market cap and volume tracking
-- **War Leaderboard**: Rankings of all migrated tokens with weekly competitions
+- 🚀 Launch tokens with bonding curves using backend wallet
+- 💰 Check wallet balance and information
+- ⚔️ Create battle tokens (two tokens at once)
+- 🔐 API key authentication (production)
+- 🏥 Health check endpoints
+- 📊 Solana network monitoring
 
-### Pages Implemented
-1. **Home Page** - Active battles display, TVT token info, navigation
-2. **Create Battle** - Form for launching new token battles (no wallet connection needed)
-3. **Battle Details** - Live battle tracking with countdown, progress bar, and token stats
-4. **Playbook** - Comprehensive guide explaining the platform
-5. **War Leaderboard** - Token rankings with podium display and weekly competitions
+## Prerequisites
 
-### Key Components
-- **BattleCard** - Displays battle information in grid layout
-- **CountdownTimer** - Real-time countdown with automatic updates
-- **Header** - Navigation with TVT contract address and dark mode toggle
-- **Responsive Design** - Mobile-first approach with Tailwind CSS
+- Node.js 18+ 
+- Yarn or npm
+- Solana wallet private key in `id.json` format
 
-## 🛠 Technology Stack
+## Setup
 
-- **Frontend**: React 18 + TypeScript
-- **Styling**: Tailwind CSS with custom design system
-- **Routing**: React Router v6
-- **Icons**: Lucide React
-- **Notifications**: React Hot Toast
-- **Animations**: Framer Motion
-- **Blockchain**: Solana Web3.js (ready for integration)
-- **Database**: Supabase (ready for integration)
-
-## 🎨 Design System
-
-### Colors
-- **Primary Green**: `#22c55e` (TVT brand color)
-- **Blue Accent**: `#3b82f6` (battle contrast)
-- **Dark Theme**: Various shades from `#0f172a` to `#475569`
-- **Gradient**: `linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)`
-
-### Custom CSS Classes
-- `.btn-primary` - Main action buttons with gradient
-- `.btn-secondary` - Secondary buttons with dark styling
-- `.card` - Consistent card layout throughout app
-- `.input-field` - Form input styling
-
-## 📁 Project Structure
-
-```
-src/
-├── components/
-│   ├── layout/
-│   │   └── Header.tsx           # Navigation header
-│   ├── BattleCard.tsx          # Battle display component
-│   └── CountdownTimer.tsx      # Timer component
-├── pages/
-│   ├── HomePage.tsx            # Main landing page
-│   ├── CreateBattlePage.tsx    # Battle creation form
-│   ├── BattleDetailsPage.tsx   # Individual battle view
-│   ├── PlaybookPage.tsx        # Platform documentation
-│   └── LeaderboardPage.tsx     # Token rankings
-├── types/
-│   └── index.ts                # TypeScript definitions
-├── utils/
-│   ├── clipboard.ts            # Copy to clipboard utility
-│   └── format.ts               # Number formatting utilities
-├── App.tsx                     # Main app component with routing
-├── index.tsx                   # React entry point
-└── index.css                   # Global styles with Tailwind
-```
-
-## ⚡ Getting Started
-
-1. **Install Dependencies**
+1. **Install dependencies**
    ```bash
+   cd server
+   yarn install
+   # or
    npm install
    ```
 
-2. **Start Development Server**
+2. **Create environment file**
    ```bash
-   npm start
+   cp .env.example .env
+   ```
+   
+   Edit `.env` with your configuration:
+   ```env
+   NODE_ENV=development
+   PORT=3001
+   SOLANA_NETWORK=devnet
+   SOLANA_RPC_ENDPOINT=https://api.devnet.solana.com
+   PLATFORM_CONFIG=Hz3hBp4oRxJHZrU24P5kHTHzHffQjoWTq68CrDatewk3
+   API_KEY=your-secret-api-key-here
    ```
 
-3. **Build for Production**
-   ```bash
-   npm run build
+3. **Create wallet file**
+   
+   Create `id.json` in the server root directory with your wallet private key:
+   ```json
    ```
 
-## 🔧 Next Steps for Integration
+4. **Start the server**
+   ```bash
+   # Development mode
+   yarn dev
+   
+   # Production mode
+   yarn build
+   yarn start
+   ```
 
-### Backend Integration
-- [ ] Connect to Supabase for battle data storage
-- [ ] Implement image upload for token logos
-- [ ] Set up user authentication (optional)
+## API Endpoints
 
-### Solana Integration
-- [ ] Connect to Meteora Dynamic Bonding Curve
-- [ ] Implement token launch functionality
-- [ ] Add wallet connection for trading
-- [ ] Integrate real-time market data
+### Health Checks
 
-### Smart Contract Features
-- [ ] Liquidity pouring mechanism with MEV protection
-- [ ] TVT token holder benefits system
-- [ ] Automated battle resolution
-- [ ] Weekly war competitions
+- `GET /health` - Server health status
+- `GET /health/solana` - Solana network connectivity
 
-### Additional Features
-- [ ] Battle creation notifications
-- [ ] Social media integrations
-- [ ] Advanced analytics dashboard
-- [ ] Mobile app (React Native)
+### Wallet Information
 
-## 🎯 Battle Flow
+- `GET /api/tokens/wallet` - Get wallet public key and balance
 
-1. **Create Battle**: User submits metadata for two competing tokens
-2. **Token Launch**: Both tokens launch simultaneously on Meteora
-3. **Community Trading**: Market determines winner through volume and market cap
-4. **Countdown**: Battle runs for user-defined duration
-5. **Liquidity Pour**: Losing token's liquidity flows to winner and platform
+### Token Creation
 
-## 💎 TVT Token Benefits
+- `POST /api/tokens/create` - Create a single token
+- `POST /api/tokens/create-battle` - Create two tokens for battle
 
-- **Free Launches**: No fees for TVT holders
-- **Revenue Share**: Percentage of platform fees
-- **Priority Access**: Early access to new features
-- **Voting Rights**: Platform governance participation
+## API Usage Examples
 
-## 🔒 Security Features
+### 1. Check Wallet Info
 
-- MEV protection for liquidity pouring
-- Random timing for battle resolution
-- Audited smart contracts
-- Slippage protection
+```bash
+curl http://localhost:3001/api/tokens/wallet
+```
 
-## 📱 Mobile Responsive
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "publicKey": "ABC123...",
+    "balance": 1.5,
+    "network": "devnet",
+    "explorer": "https://explorer.solana.com/address/ABC123...?cluster=devnet"
+  }
+}
+```
 
-The application is fully responsive and optimized for:
-- Mobile devices (iOS/Android)
-- Tablets
-- Desktop browsers
-- Progressive Web App ready
+### 2. Create Single Token
 
----
+```bash
+curl -X POST http://localhost:3001/api/tokens/create \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "My Token",
+    "symbol": "MTK",
+    "description": "My awesome token",
+    "image": "https://example.com/logo.png"
+  }'
+```
 
-**Built with ❤️ for the Solana ecosystem** 
+### 3. Create Battle Tokens
+
+```bash
+curl -X POST http://localhost:3001/api/tokens/create-battle \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "token1": {
+      "name": "Alpha Token",
+      "ticker": "ALPHA",
+      "logo": "https://example.com/alpha.png"
+    },
+    "token2": {
+      "name": "Beta Token", 
+      "ticker": "BETA",
+      "logo": "https://example.com/beta.png"
+    }
+  }'
+```
+
+## Response Format
+
+All endpoints return responses in this format:
+
+```json
+{
+  "success": true|false,
+  "data": {...},        // Present on success
+  "error": "message"    // Present on error
+}
+```
+
+## Security
+
+- API key authentication in production
+- CORS protection
+- Helmet security headers
+- Request size limits
+- Input validation
+
+## Development
+
+- TypeScript for type safety
+- ESLint and Prettier for code quality
+- Morgan for HTTP request logging
+- Detailed error handling and logging
+
+## Deployment
+
+1. Set `NODE_ENV=production`
+2. Configure production RPC endpoint
+3. Set secure API key
+4. Update CORS origins
+5. Use process manager (PM2, Docker, etc.)
+
+## Troubleshooting
+
+### Common Issues
+
+1. **"id.json file not found"**
+   - Create the `id.json` file with your wallet private key array
+
+2. **"Insufficient balance"**
+   - Ensure your wallet has enough SOL for transaction fees
+
+3. **"Failed to connect to Solana"**
+   - Check your RPC endpoint and network connectivity
+
+4. **"Invalid config address"**
+   - Verify the PLATFORM_CONFIG address is correct for your network
+
+### Debug Mode
+
+Set `DEBUG=*` environment variable for detailed logging:
+
+```bash
+DEBUG=* yarn dev
+```
+
+## License
+
+MIT
