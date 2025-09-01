@@ -72,7 +72,7 @@ const PlaybookPage: React.FC = () => {
     {
       number: 4,
       title: "Liquidity Pours",
-      description: "When the countdown ends, the losing token's liquidity flows to the winner (70%), TVT token (10%), and team wallet (20%).",
+      description: "When the countdown ends, the losing token's liquidity flows to the winner & the $TvT token.",
       icon: <DollarSign className="w-6 h-6" />,
       color: "text-yellow-400",
       bgColor: "bg-yellow-500/20"
@@ -83,7 +83,7 @@ const PlaybookPage: React.FC = () => {
     {
       icon: <Star className="w-6 h-6" />,
       title: "Free Launches Forever",
-      description: "No fees for creating battles when you hold TVT tokens",
+      description: "No fees for creating battles when you hold TvT tokens",
       highlight: "🆓"
     },
     {
@@ -162,7 +162,7 @@ const PlaybookPage: React.FC = () => {
                     <BookOpen className="w-5 h-5 mr-2" />
                     Official Documentation
                   </h3>
-                  <p className="text-dark-300 text-sm">Updated June 29, 2024</p>
+                  <p className="text-dark-300 text-sm">Updated Sep 1, 2025</p>
                 </div>
                 <div className="bg-dark-700/50 rounded-xl p-4 border border-dark-600/50">
                   <h3 className="text-lg font-bold text-blue-400 mb-2 flex items-center">
@@ -313,11 +313,11 @@ const PlaybookPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Enhanced TVT Benefits Section */}
+      {/* Enhanced TvT Benefits Section */}
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="text-5xl font-bold bg-gradient-to-r from-white to-primary-200 bg-clip-text text-transparent mb-4">
-            TVT Holder Benefits
+            TvT Holder Benefits
           </h2>
           <p className="text-dark-300 text-xl mb-12">Unlock exclusive perks and rewards</p>
           
@@ -326,7 +326,7 @@ const PlaybookPage: React.FC = () => {
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl transform translate-x-32 -translate-y-32"></div>
             
             <div className="relative z-10">
-              <h3 className="text-3xl font-bold text-white mb-8">Hold $TVT for Exclusive Perks</h3>
+              <h3 className="text-3xl font-bold text-white mb-8">Hold $TvT for Exclusive Perks</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {benefits.map((benefit, index) => (

@@ -4,3 +4,8 @@
 .env.test.local
 .env.production.local
 node_modules
+yarn.lock
+package-lock.json
+build
+server/dist
+server/node_modules

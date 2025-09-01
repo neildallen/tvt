@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Trophy, 
@@ -16,112 +16,214 @@ import {
 } from 'lucide-react';
 import { LeaderboardEntry } from '../types';
 import { copyToClipboard } from '../utils/clipboard';
-import { formatNumber } from '../utils/format';
+import { formatNumber, getImgProxyUrl } from '../utils/format';
 import CountdownTimer from '../components/CountdownTimer';
+import { BattleService } from '../services/BattleService';
+import { BackendApiService } from '../services/BackendApiService';
 
 const LeaderboardPage: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const isUpdatingRef = useRef(false);
   
-  // Next war date (7 days from now)
-  const nextWarDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  // Next war date (everyday at 12:00 AM)
+  const nextWarDate = (() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0); // Set to 12:00 AM
+    return tomorrow;
+  })();
+  
+  // Helper function to compare token data and detect changes
+  const hasTokenDataChanged = (oldToken: any, newToken: any) => {
+    return (
+      oldToken.marketCap !== newToken.marketCap ||
+      oldToken.currentPrice !== newToken.currentPrice ||
+      oldToken.progress !== newToken.progress ||
+      oldToken.migrated !== newToken.migrated ||
+      oldToken.currentReserve !== newToken.currentReserve
+    );
+  };
+
+  // Optimized function to update only changed token data
+  const updateTokenDataInLeaderboard = useCallback(async (currentLeaderboard: LeaderboardEntry[]) => {
+    if (isUpdatingRef.current) return currentLeaderboard;
+    isUpdatingRef.current = true;
+
+    try {
+      const updatedLeaderboard = await Promise.all(
+        currentLeaderboard.map(async (entry) => {
+          try {
+            // Fetch fresh token data
+            const tokenResponse = await BackendApiService.getPoolInfo(
+              entry.token.contractAddress || '',
+              entry.token.poolAddress || '',
+              entry.token.name,
+              entry.token.ticker,
+              entry.token.migrated
+            );
+
+            const newTokenData = {
+              marketCap: tokenResponse.data?.marketCap || entry.token.marketCap,
+              currentPrice: tokenResponse.data?.currentPrice || 0,
+              progress: tokenResponse.data?.progress || 0,
+              migrated: tokenResponse.data?.isMigrated || false,
+              currentReserve: tokenResponse.data?.currentReserve || 0,
+            };
+
+            // Only update if data has actually changed
+            const tokenChanged = hasTokenDataChanged(entry.token, newTokenData);
+
+            if (tokenChanged) {
+              console.log(`Updating token data for leaderboard entry ${entry.token.ticker}`);
+              return {
+                ...entry,
+                token: { ...entry.token, ...newTokenData }
+              };
+            }
+
+            return entry;
+          } catch (tokenError) {
+            console.error(`Error updating token data for ${entry.token.ticker}:`, tokenError);
+            return entry;
+          }
+        })
+      );
+
+      return updatedLeaderboard;
+    } finally {
+      isUpdatingRef.current = false;
+    }
+  }, []);
+
+  // Initial load function - loads leaderboard and token data
+  const initialLoadLeaderboard = async () => {
+    try {
+      setLoading(true);
+      const leaderboardData = await BattleService.getLeaderboard();
+      
+      // Get fresh token data for each leaderboard entry
+      console.log(`Fetching token info for ${leaderboardData.length} leaderboard entries...`);
+      const leaderboardWithTokenInfo = await Promise.all(
+        leaderboardData.map(async (entry) => {
+          try {
+            console.log(`Fetching info for token ${entry.token.ticker}`);
+            
+            const tokenResponse = await BackendApiService.getPoolInfo(
+              entry.token.contractAddress || '',
+              entry.token.poolAddress || '',
+              entry.token.name,
+              entry.token.ticker,
+              entry.token.migrated
+            );
+            
+            console.log(`Token info fetched for ${entry.token.ticker}:`, tokenResponse.data);
+            
+            // Update entry with fresh token data
+            return {
+              ...entry,
+              token: {
+                ...entry.token,
+                marketCap: tokenResponse.data?.marketCap || entry.token.marketCap,
+                currentPrice: tokenResponse.data?.currentPrice || 0,
+                progress: tokenResponse.data?.progress || 0,
+                migrated: tokenResponse.data?.isMigrated || false,
+                currentReserve: tokenResponse.data?.currentReserve || 0,
+              }
+            };
+          } catch (tokenError) {
+            console.error(`Error fetching token info for ${entry.token.ticker}:`, tokenError);
+            return entry;
+          }
+        })
+      );
+      
+      console.log(`Updated ${leaderboardWithTokenInfo.length} leaderboard entries with fresh token info`);
+      setLeaderboard(leaderboardWithTokenInfo);
+      setIsInitialLoad(false);
+    } catch (error) {
+      console.error('Failed to fetch leaderboard:', error);
+      setIsInitialLoad(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Background update function - only updates token data without showing loading
+  const backgroundUpdateLeaderboard = useCallback(async () => {
+    if (isInitialLoad || loading || leaderboard.length === 0) return;
+
+    try {
+      console.log('Background update: Checking for leaderboard token data changes...');
+      const updatedLeaderboard = await updateTokenDataInLeaderboard(leaderboard);
+      
+      // Only update state if there were actual changes
+      const hasChanges = updatedLeaderboard.some((entry, index) => {
+        const currentEntry = leaderboard[index];
+        return hasTokenDataChanged(currentEntry.token, entry.token);
+      });
+
+      if (hasChanges) {
+        console.log('Background update: Changes detected, updating leaderboard UI...');
+        setLeaderboard(updatedLeaderboard);
+      } else {
+        console.log('Background update: No changes detected in leaderboard');
+      }
+    } catch (err) {
+      console.error('Background leaderboard update error:', err);
+      // Don't show error to user for background updates
+    }
+  }, [leaderboard, isInitialLoad, loading, updateTokenDataInLeaderboard]);
 
   useEffect(() => {
-    // Mock data fetch - replace with actual API call
-    const fetchLeaderboard = async () => {
-      try {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Mock leaderboard data
-        const mockLeaderboard: LeaderboardEntry[] = [
-          {
-            rank: 1,
-            battleWon: true,
-            token: {
-              id: '1',
-              ticker: 'JULY',
-              name: 'JULY Token',
-              logo: '/logos/july.png',
-              contractAddress: 'ABC123DEF456GHI789',
-              marketCap: 15800000,
-              volume: 2300000,
-              migrated: true,
-              twitter: '@july_token',
-            }
-          },
-          {
-            rank: 2,
-            battleWon: true,
-            token: {
-              id: '2',
-              ticker: 'JUNE',
-              name: 'JUNE Token',
-              logo: '/logos/june.png',
-              contractAddress: 'DEF456GHI789ABC123',
-              marketCap: 12400000,
-              volume: 1800000,
-              migrated: true,
-              twitter: '@june_token',
-            }
-          },
-          {
-            rank: 3,
-            battleWon: true,
-            token: {
-              id: '3',
-              ticker: 'SPRING',
-              name: 'Spring Token',
-              logo: '/logos/spring.png',
-              contractAddress: 'GHI789ABC123DEF456',
-              marketCap: 8900000,
-              volume: 1200000,
-              migrated: true,
-              twitter: '@spring_token',
-            }
-          },
-          {
-            rank: 4,
-            battleWon: true,
-            token: {
-              id: '4',
-              ticker: 'WINTER',
-              name: 'Winter Token',
-              logo: '/logos/winter.png',
-              contractAddress: 'JKL012MNO345PQR678',
-              marketCap: 6700000,
-              volume: 980000,
-              migrated: true,
-              twitter: '@winter_token',
-            }
-          },
-          {
-            rank: 5,
-            battleWon: true,
-            token: {
-              id: '5',
-              ticker: 'AUTUMN',
-              name: 'Autumn Token',
-              logo: '/logos/autumn.png',
-              contractAddress: 'STU901VWX234YZA567',
-              marketCap: 4500000,
-              volume: 670000,
-              migrated: true,
-              twitter: '@autumn_token',
-            }
-          }
-        ];
-        
-        setLeaderboard(mockLeaderboard);
-      } catch (error) {
-        console.error('Failed to fetch leaderboard:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLeaderboard();
+    initialLoadLeaderboard();
   }, []);
+
+  // Set up background updates only after initial load
+  useEffect(() => {
+    if (isInitialLoad) return;
+
+    const interval = setInterval(() => {
+      backgroundUpdateLeaderboard();
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(interval);
+  }, [isInitialLoad, backgroundUpdateLeaderboard]);
+
+  // Auto-buy function for rank 1 token
+  const handleWarComplete = useCallback(async () => {
+    if (leaderboard.length === 0) {
+      console.log('No leaderboard data available for auto-buy');
+      return;
+    }
+
+    const rank1Token = leaderboard[0];
+    if (!rank1Token || !rank1Token.token.contractAddress || !rank1Token.token.poolAddress) {
+      console.log('Rank 1 token missing required data for auto-buy');
+      return;
+    }
+
+    try {
+      console.log(`🎯 War complete! Auto-buying rank 1 token: ${rank1Token.token.ticker} with 3 SOL`);
+      
+      const buyResult = await BackendApiService.rewardChampion(
+        rank1Token.token.contractAddress,
+        rank1Token.token.poolAddress,
+        3, // 3 SOL
+        500 // 5% slippage
+      );
+
+      if (buyResult.success) {
+        console.log(`✅ Successfully bought ${rank1Token.token.ticker}!`, buyResult.data);
+        // You could add a toast notification here
+      } else {
+        console.error(`❌ Failed to buy ${rank1Token.token.ticker}:`, buyResult.error);
+      }
+    } catch (error) {
+      console.error('Error during auto-buy:', error);
+    }
+  }, [leaderboard]);
 
   const handleCopyCA = (ca: string, ticker: string) => {
     copyToClipboard(ca, `${ticker} contract address copied!`);
@@ -205,7 +307,7 @@ const LeaderboardPage: React.FC = () => {
             </p>
             <p className="text-dark-400 mb-12 flex items-center justify-center space-x-2">
               <Zap className="w-4 h-4 text-yellow-400" />
-              <span>Wars occur every 7 days</span>
+              <span>Wars occur daily at 12:00 AM</span>
               <Zap className="w-4 h-4 text-yellow-400" />
             </p>
 
@@ -224,6 +326,7 @@ const LeaderboardPage: React.FC = () => {
                 <div className="bg-gradient-to-r from-primary-500/20 to-orange-500/20 rounded-2xl p-6 border border-primary-500/30">
                   <CountdownTimer 
                     targetDate={nextWarDate}
+                    onComplete={handleWarComplete}
                     className="text-4xl font-bold text-yellow-400"
                   />
                 </div>
@@ -255,7 +358,7 @@ const LeaderboardPage: React.FC = () => {
                       
                       <div className="relative bg-white rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center shadow-xl border-4 border-gray-300">
                         {leaderboard[1].token.logo ? (
-                          <img src={leaderboard[1].token.logo} alt={leaderboard[1].token.ticker} className="w-16 h-16 rounded-full" />
+                          <img src={getImgProxyUrl(leaderboard[1].token.logo, 64)} alt={leaderboard[1].token.ticker} className="w-16 h-16 rounded-full" />
                         ) : (
                           <div className="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center">
                             <span className="text-white font-bold text-lg">{leaderboard[1].token.ticker[0]}</span>
@@ -287,7 +390,7 @@ const LeaderboardPage: React.FC = () => {
                       
                       <div className="relative bg-white rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center shadow-2xl border-4 border-yellow-400">
                         {leaderboard[0].token.logo ? (
-                          <img src={leaderboard[0].token.logo} alt={leaderboard[0].token.ticker} className="w-20 h-20 rounded-full" />
+                          <img src={getImgProxyUrl(leaderboard[0].token.logo, 64)} alt={leaderboard[0].token.ticker} className="w-20 h-20 rounded-full" />
                         ) : (
                           <div className="w-20 h-20 bg-primary-500 rounded-full flex items-center justify-center">
                             <span className="text-white font-bold text-xl">{leaderboard[0].token.ticker[0]}</span>
@@ -314,7 +417,7 @@ const LeaderboardPage: React.FC = () => {
                       
                       <div className="relative bg-white rounded-full w-18 h-18 mx-auto mb-4 flex items-center justify-center shadow-xl border-4 border-orange-300">
                         {leaderboard[2].token.logo ? (
-                          <img src={leaderboard[2].token.logo} alt={leaderboard[2].token.ticker} className="w-14 h-14 rounded-full" />
+                          <img src={getImgProxyUrl(leaderboard[2].token.logo, 64)} alt={leaderboard[2].token.ticker} className="w-14 h-14 rounded-full" />
                         ) : (
                           <div className="w-14 h-14 bg-primary-500 rounded-full flex items-center justify-center">
                             <span className="text-white font-bold">{leaderboard[2].token.ticker[0]}</span>
@@ -362,9 +465,8 @@ const LeaderboardPage: React.FC = () => {
                       <th className="px-8 py-6 text-left text-sm font-bold text-dark-200 uppercase tracking-wider">Rank</th>
                       <th className="px-8 py-6 text-left text-sm font-bold text-dark-200 uppercase tracking-wider">Token</th>
                       <th className="px-8 py-6 text-left text-sm font-bold text-dark-200 uppercase tracking-wider">Market Cap</th>
-                      <th className="px-8 py-6 text-left text-sm font-bold text-dark-200 uppercase tracking-wider">Volume 24h</th>
                       <th className="px-8 py-6 text-left text-sm font-bold text-dark-200 uppercase tracking-wider">Contract</th>
-                      <th className="px-8 py-6 text-left text-sm font-bold text-dark-200 uppercase tracking-wider">Actions</th>
+                      {/* <th className="px-8 py-6 text-left text-sm font-bold text-dark-200 uppercase tracking-wider">Actions</th> */}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-dark-700/50">
@@ -390,7 +492,7 @@ const LeaderboardPage: React.FC = () => {
                           <div className="flex items-center space-x-4">
                             <div className="relative">
                               {entry.token.logo ? (
-                                <img src={entry.token.logo} alt={entry.token.ticker} className="w-16 h-16 rounded-2xl shadow-lg" />
+                                <img src={getImgProxyUrl(entry.token.logo, 64)} alt={entry.token.ticker} className="w-16 h-16 rounded-2xl shadow-lg" />
                               ) : (
                                 <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg">
                                   <span className="text-white font-bold text-lg">{entry.token.ticker[0]}</span>
@@ -414,16 +516,10 @@ const LeaderboardPage: React.FC = () => {
                         {/* Market Cap */}
                         <td className="px-8 py-6">
                           <div className="text-white font-bold text-xl">${formatNumber(entry.token.marketCap)}</div>
-                          <div className="flex items-center space-x-1 text-green-400 text-sm">
+                          {/* <div className="flex items-center space-x-1 text-green-400 text-sm">
                             <TrendingUp size={14} />
                             <span>+24.5%</span>
-                          </div>
-                        </td>
-
-                        {/* Volume */}
-                        <td className="px-8 py-6">
-                          <div className="text-white font-semibold text-lg">${formatNumber(entry.token.volume)}</div>
-                          <div className="text-dark-400 text-sm">24h volume</div>
+                          </div> */}
                         </td>
 
                         {/* Contract Address */}
@@ -442,7 +538,7 @@ const LeaderboardPage: React.FC = () => {
                         </td>
 
                         {/* Actions */}
-                        <td className="px-8 py-6">
+                        {/* <td className="px-8 py-6">
                           <div className="flex items-center space-x-3">
                             {entry.token.twitter && (
                               <button
@@ -460,7 +556,7 @@ const LeaderboardPage: React.FC = () => {
                               <ExternalLink size={14} className="group-hover:translate-x-1 transition-transform duration-300" />
                             </Link>
                           </div>
-                        </td>
+                        </td> */}
                       </tr>
                     ))}
                   </tbody>

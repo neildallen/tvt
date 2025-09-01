@@ -48,8 +48,8 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({
 
   return (
     <div className={`inline-flex items-center space-x-1 font-mono ${className}`}>
-      <span>{formatNumber(timeLeft.days)}d</span>
-      <span>:</span>
+      {/* <span>{formatNumber(timeLeft.days)}d</span>
+      <span>:</span> */}
       <span>{formatNumber(timeLeft.hours)}h</span>
       <span>:</span>
       <span>{formatNumber(timeLeft.minutes)}m</span>

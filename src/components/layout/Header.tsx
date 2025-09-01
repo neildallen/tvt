@@ -11,14 +11,15 @@ import {
   Home
 } from 'lucide-react';
 import { copyToClipboard } from '../../utils/clipboard';
+import { TVT_CA } from '../../constants';
 
 const Header: React.FC = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const tvtCA = 'xxxxxxxxxxxx'; // TVT contract address
+  const tvtCA = TVT_CA; // TVT contract address
 
   const handleCopyCA = () => {
-    copyToClipboard(tvtCA, 'TVT contract address copied!');
+    copyToClipboard(tvtCA, 'TvT contract address copied!');
   };
 
   const toggleMobileMenu = () => {
@@ -60,8 +61,12 @@ const Header: React.FC = () => {
             {/* Enhanced Logo */}
             <Link to="/" className="flex items-center space-x-3 group">
               <div className="relative">
-                <div className="w-10 h-10 bg-tvt-gradient rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">TVT</span>
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                  <img 
+                    src="/logo.png" 
+                    alt="Token vs Token Logo" 
+                    className="w-8 h-8 object-contain"
+                  />
                 </div>
               </div>
               <div className="hidden sm:block">
@@ -98,11 +103,11 @@ const Header: React.FC = () => {
 
             {/* Enhanced Right Section */}
             <div className="flex items-center space-x-3">
-              {/* TVT Contract Address */}
+              {/* TvT Contract Address */}
               <div className="hidden md:flex items-center space-x-3 bg-dark-800/50 backdrop-blur-sm rounded-2xl px-4 py-2 border border-dark-700/50 shadow-lg">
-                <span className="text-xs text-dark-400 font-medium">TVT CA:</span>
+                <span className="text-xs text-dark-400 font-medium">TvT CA:</span>
                 <span className="text-sm font-mono text-white bg-dark-700/50 px-2 py-1 rounded-lg">
-                  {tvtCA}
+                  {tvtCA.slice(0, 4) + '...' + tvtCA.slice(-4)}
                 </span>
                 <button
                   onClick={handleCopyCA}
@@ -114,9 +119,9 @@ const Header: React.FC = () => {
               </div>
 
               {/* Theme Toggle */}
-              <button className="p-3 text-dark-400 hover:text-white hover:bg-dark-700/50 rounded-xl transition-all duration-300 group">
+              {/* <button className="p-3 text-dark-400 hover:text-white hover:bg-dark-700/50 rounded-xl transition-all duration-300 group">
                 <Moon size={20} className="group-hover:rotate-12 transition-transform duration-300" />
-              </button>
+              </button> */}
 
               {/* Mobile Menu Button */}
               <button
@@ -171,7 +176,7 @@ const Header: React.FC = () => {
                 <div className="bg-dark-800/50 rounded-xl p-4 border border-dark-700/50">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-dark-400 font-medium">TVT Contract</span>
+                      <span className="text-sm text-dark-400 font-medium">TvT Contract</span>
                     </div>
                     <button
                       onClick={handleCopyCA}
@@ -181,7 +186,7 @@ const Header: React.FC = () => {
                     </button>
                   </div>
                   <span className="text-sm font-mono text-white bg-dark-700/50 px-3 py-2 rounded-lg block">
-                    {tvtCA}
+                    {tvtCA.slice(0, 15) + '...' + tvtCA.slice(-15)}
                   </span>
                 </div>
               </div>

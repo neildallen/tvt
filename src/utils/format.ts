@@ -24,3 +24,5 @@ export const truncateAddress = (address: string, length: number = 8): string => 
   if (address.length <= length) return address;
   return `${address.slice(0, length / 2)}...${address.slice(-length / 2)}`;
 }; 
+
+export const getImgProxyUrl = (url: string, size: number) => `https://wsrv.nl/?fit=cover&w=${size}&h=${size}&url=${url}`
