@@ -384,7 +384,7 @@ const CreateBattlePage: React.FC = () => {
           </div>
         </div>
 
-        {/* <div>
+        <div>
           <label className="block text-sm font-medium text-dark-300 mb-2">
             Website (optional)
           </label>
@@ -424,7 +424,7 @@ const CreateBattlePage: React.FC = () => {
             value={formData[tokenKey].telegram || ''}
             onChange={(e) => handleInputChange(tokenKey, 'telegram', e.target.value)}
           />
-        </div> */}
+        </div>
       </div>
     </div>
   );

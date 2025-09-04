@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: ['*', 'https://tvt-launchpad.vercel.app', 'http://localhost:5000', 'http://localhost:5005'],
+  origin: ['*', 'https://tvt-two.vercel.app', 'https://tvt-launchpad.vercel.app', 'http://localhost:5000', 'http://localhost:5005'],
   credentials: true
 }));
 app.use(morgan('combined'));

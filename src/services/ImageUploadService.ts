@@ -6,31 +6,7 @@ export class ImageUploadService {
    */
   static async uploadImage(file: File, bucket: string = 'token-logos'): Promise<string> {
     try {
-      // Check if bucket exists first
-      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-      
-      if (listError) {
-        console.warn('Could not check buckets:', listError);
-      } else {
-        const bucketExists = buckets?.some(b => b.name === bucket);
-        if (!bucketExists) {
-          console.warn(`Bucket '${bucket}' does not exist. Creating it...`);
-          // Try to create the bucket
-          const { error: createError } = await supabase.storage.createBucket(bucket, {
-            public: true,
-            allowedMimeTypes: ['image/*'],
-            fileSizeLimit: 5242880 // 5MB
-          });
-          
-          if (createError) {
-            console.error('Could not create bucket:', createError);
-            // Return a placeholder URL for development
-            return `https://via.placeholder.com/150x150.png?text=${encodeURIComponent(file.name)}`;
-          }
-        }
-      }
-
-      // Generate unique filename
+      // First, try to upload directly (bucket should exist from setup)
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `logos/${fileName}`;
@@ -43,7 +19,37 @@ export class ImageUploadService {
           upsert: false,
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Upload error:', error);
+        
+        // If bucket doesn't exist, try to create it
+        if (error.message?.includes('Bucket not found') || error.message?.includes('does not exist')) {
+          console.warn(`Bucket '${bucket}' does not exist. Attempting to create it...`);
+          
+          const { error: createError } = await supabase.storage.createBucket(bucket, {
+            public: true,
+            allowedMimeTypes: ['image/*'],
+            fileSizeLimit: 5242880 // 5MB
+          });
+          
+          if (createError) {
+            console.error('Could not create bucket:', createError);
+            throw new Error('Storage bucket not available and could not be created');
+          }
+          
+          // Retry upload after creating bucket
+          const { data: retryData, error: retryError } = await supabase.storage
+            .from(bucket)
+            .upload(filePath, file, {
+              cacheControl: '3600',
+              upsert: false,
+            });
+            
+          if (retryError) throw retryError;
+        } else {
+          throw error;
+        }
+      }
 
       // Get public URL
       const { data: urlData } = supabase.storage

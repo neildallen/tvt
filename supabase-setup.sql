@@ -249,3 +249,62 @@ WHERE contract_address IS NOT NULL AND contract_address != '';
 
 -- Make contract_address nullable
 ALTER TABLE tokens ALTER COLUMN contract_address DROP NOT NULL;
+
+-- ========================================
+-- STORAGE SETUP FOR TOKEN LOGOS
+-- ========================================
+
+-- Create the token-logos storage bucket
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'token-logos',
+  'token-logos', 
+  true,
+  5242880,  -- 5MB in bytes
+  ARRAY['image/*']
+) ON CONFLICT (id) DO NOTHING;
+
+-- Note: RLS is already enabled on storage tables by Supabase
+-- We just need to create the policies
+
+-- Storage RLS Policies
+
+-- Allow public read access to token-logos bucket
+CREATE POLICY "Public read access for token-logos" ON storage.objects
+FOR SELECT USING (bucket_id = 'token-logos');
+
+-- Allow authenticated and anonymous users to upload to token-logos bucket
+CREATE POLICY "Anyone can upload token logos" ON storage.objects
+FOR INSERT WITH CHECK (bucket_id = 'token-logos');
+
+-- Allow authenticated and anonymous users to update uploads
+CREATE POLICY "Anyone can update token logos" ON storage.objects
+FOR UPDATE WITH CHECK (bucket_id = 'token-logos');
+
+-- Allow authenticated and anonymous users to delete uploads
+CREATE POLICY "Anyone can delete token logos" ON storage.objects
+FOR DELETE USING (bucket_id = 'token-logos');
+
+-- Allow bucket listing (needed for the service to check if bucket exists)
+CREATE POLICY "Allow bucket listing" ON storage.buckets
+FOR SELECT USING (true);
+
+-- Allow bucket creation for service accounts (but not regular users)
+CREATE POLICY "Service can create buckets" ON storage.buckets
+FOR INSERT WITH CHECK (auth.jwt() ->> 'role' = 'service_role' OR name = 'token-logos');
+
+-- Function to clean up orphaned images (optional, run periodically)
+CREATE OR REPLACE FUNCTION cleanup_orphaned_logos()
+RETURNS void AS $$
+BEGIN
+  DELETE FROM storage.objects 
+  WHERE bucket_id = 'token-logos' 
+  AND created_at < NOW() - INTERVAL '7 days'  -- Only clean up files older than 7 days
+  AND name NOT IN (
+    SELECT DISTINCT split_part(logo_url, '/', -1) 
+    FROM tokens 
+    WHERE logo_url IS NOT NULL 
+    AND logo_url LIKE '%supabase%'
+  );
+END;
+$$ LANGUAGE plpgsql;
