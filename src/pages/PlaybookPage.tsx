@@ -150,7 +150,6 @@ const PlaybookPage: React.FC = () => {
                   className="w-full h-full object-cover rounded-2xl"
                   controls
                   autoPlay
-                  muted
                   preload="metadata"
                   poster="/logo.png"
                 >
