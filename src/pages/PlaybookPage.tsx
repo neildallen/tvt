@@ -145,15 +145,26 @@ const PlaybookPage: React.FC = () => {
             <div className="relative bg-dark-800/80 backdrop-blur-sm rounded-3xl p-4 max-w-4xl mx-auto border border-dark-700/50 shadow-2xl transform hover:scale-[1.02] transition-transform duration-300">
               <div className="absolute inset-0 bg-gradient-to-r from-primary-500/5 to-blue-500/5 rounded-3xl"></div>
               
-              <div className="relative aspect-video bg-gradient-to-br from-dark-700 to-dark-800 rounded-2xl flex items-center justify-center mb-4 border border-dark-600 overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="relative text-center z-10">
-                  <div className="w-20 h-20 bg-tvt-gradient rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg transform group-hover:scale-110 transition-transform duration-300">
-                    <Play className="w-10 h-10 text-white ml-1" />
+              <div className="relative aspect-video bg-gradient-to-br from-dark-700 to-dark-800 rounded-2xl mb-4 border border-dark-600 overflow-hidden group">
+                <video 
+                  className="w-full h-full object-cover rounded-2xl"
+                  controls
+                  autoPlay
+                  muted
+                  preload="metadata"
+                  poster="/logo.png"
+                >
+                  <source src="/playbook.webm" type="video/webm" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-dark-700 to-dark-800">
+                    <div className="text-center">
+                      <div className="w-20 h-20 bg-tvt-gradient rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                        <Play className="w-10 h-10 text-white ml-1" />
+                      </div>
+                      <p className="text-primary-300 font-semibold text-lg">Video not supported</p>
+                      <p className="text-dark-400 text-sm">Please use a modern browser</p>
+                    </div>
                   </div>
-                  <p className="text-primary-300 font-semibold text-lg">Introduction Video</p>
-                  <p className="text-dark-400 text-sm">Coming Soon</p>
-                </div>
+                </video>
               </div>
               
               <div className="relative grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
@@ -166,10 +177,10 @@ const PlaybookPage: React.FC = () => {
                 </div>
                 <div className="bg-dark-700/50 rounded-xl p-4 border border-dark-600/50">
                   <h3 className="text-lg font-bold text-blue-400 mb-2 flex items-center">
-                    <Timer className="w-5 h-5 mr-2" />
-                    1 min read
+                    <Play className="w-5 h-5 mr-2" />
+                    Playbook Video
                   </h3>
-                  <p className="text-dark-300 text-sm">Quick overview of the platform</p>
+                  <p className="text-dark-300 text-sm">Complete platform overview</p>
                 </div>
               </div>
             </div>
